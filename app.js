@@ -8,11 +8,11 @@ app.set('view engine', 'ejs')  // nasr
 
 const challengesRoutes = require("./routes/challenges.routes.js");
 const categoriesRoutes = require("./routes/categories.routes.js");
-const profilePage = require("./routes/users.routes.js"); // nasr
+const users = require("./routes/users.routes.js"); // nasr
 
 app.use("/challenges", challengesRoutes);
 app.use("/categories", categoriesRoutes);
-app.use("/profile_page", profilePage) // nasr
+app.use("/users", users) // nasr
 
 app.get("/", (req, res) => {
   res.send("Server is working");

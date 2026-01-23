@@ -8,10 +8,37 @@ router.use(express.urlencoded({ extended: true }))
 // app.set('views', path.join(__dirname, '../views'))
 // app.set('view engine', 'ejs')
 
+// get all Users
+router.get('/', (req, res) => {
+    res.json(usersData)
+})
+
+// get one User
+router.get('/:id', (req, res) => {
+    const id = Number(req.params.id)
+    const user = usersData.find((c) => c.id === id)
+    return res.json(user)
+})
+
+// edit user profile information 
+router.put('/:id', (req, res) => {
+    const id = Number(req.params.id)
+    const { userName, password, email } = req.body
+    const userUpdated = usersData.find((c) => c.id === id)
+    const userBefore = JSON.stringify(userUpdated);
+    userUpdated.username = userName
+    userUpdated.password = password
+    userUpdated.email = email
+    res.send(`user was **** ${userBefore} *** und then updated to ${JSON.stringify(userUpdated)} `)
+
+})
+
+
+
 router.post('/', (req, res) => {
     const loginData = req.body
     const user = usersData.find(c => c.username === loginData.username && c.password === parseInt(loginData.password))
-    res.send(`here is the profile page for user: ${user.username}`)
+    return res.json(user)
 })
 
 
