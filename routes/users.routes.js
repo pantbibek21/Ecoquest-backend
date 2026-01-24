@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 // const path = require('path')
+const { v4: uuidv4 } = require('uuid');
 const usersData = require('../data/userFakeData')
 router.use(express.urlencoded({ extended: true }))
 
@@ -34,6 +35,20 @@ router.put('/:id', (req, res) => {
 })
 
 
+// create a new user 
+router.post('/signup', (req, res) => {
+    const { username, password, email} = req.body
+    usersData.push({ id: uuidv4(), username, password, email})
+    res.send(usersData)
+})
+
+
+// delete a user account 
+router.delete('/:id', (req, res) => {
+    const id = Number(req.params.id) 
+    const newUsersData = usersData.filter(c => c.id !== id);
+    res.send(newUsersData)
+}) 
 
 router.post('/', (req, res) => {
     const loginData = req.body
