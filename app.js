@@ -1,10 +1,11 @@
 const express = require("express");
 const app = express();
 const path = require('path')  // nasr
+require("dotenv").config();
 app.use(express.json());
 const mongoose = require('mongoose');
 
-mongoose.connect()
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("Connected to MongoDB");
   }).catch((err) => {
