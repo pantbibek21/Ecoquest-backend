@@ -5,16 +5,18 @@ const { challenges } = require("../data/mockData");
 const activeChallenges = require("../data/activeChallenges");
 
 
+const Challenge = require("../models/challenges"); // Pfad ggf. anpassen
 
-
-// Alle Challenges
-router.get("/", (req, res) => {
-    res.json(challenges);
+// GET /challenges -> alle Challenges aus MongoDB
+router.get("/", async (req, res) => {
+    try {
+        const challenges = await Challenge.find().sort({ id: 1 }); // optional sort
+        res.json(challenges);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Could not fetch challenges" });
+    }
 });
-
-
-
-
 
 // Einzelne Challenge
 router.get("/:id", (req, res) => {
@@ -130,73 +132,73 @@ router.post("/unregister", (req, res) => {
 
 // POST /challenges/progress
 router.post("/progress", (req, res) => {
-  const userId = Number(req.body.userId);
-  const challengeId = Number(req.body.challengeId);
-  const taskId = Number(req.body.taskId);
-  const completed = Boolean(req.body.completed);
+    const userId = Number(req.body.userId);
+    const challengeId = Number(req.body.challengeId);
+    const taskId = Number(req.body.taskId);
+    const completed = Boolean(req.body.completed);
 
-  if (!Number.isFinite(userId) || !Number.isFinite(challengeId) || !Number.isFinite(taskId)) {
-    return res.status(400).json({ message: "userId, challengeId, taskId müssen Nummern sein!" });
-  }
+    if (!Number.isFinite(userId) || !Number.isFinite(challengeId) || !Number.isFinite(taskId)) {
+        return res.status(400).json({ message: "userId, challengeId, taskId müssen Nummern sein!" });
+    }
 
-  // Challenge & Task existieren?
-  const challenge = challenges.find((c) => c.id === challengeId);
-  if (!challenge) return res.status(404).json({ message: "Challenge not found" });
+    // Challenge & Task existieren?
+    const challenge = challenges.find((c) => c.id === challengeId);
+    if (!challenge) return res.status(404).json({ message: "Challenge not found" });
 
-  const taskExists = challenge.toDo?.some((t) => t.id === taskId);
-  if (!taskExists) return res.status(404).json({ message: "Task not found in this challenge" });
+    const taskExists = challenge.toDo?.some((t) => t.id === taskId);
+    if (!taskExists) return res.status(404).json({ message: "Task not found in this challenge" });
 
-  // User finden
-  let userActive = activeChallenges.find((u) => u.userId === userId);
-  if (!userActive) {
-    return res.status(404).json({ message: "User has no active challenges" });
-  }
-  if (!Array.isArray(userActive.challenges)) userActive.challenges = [];
+    // User finden
+    let userActive = activeChallenges.find((u) => u.userId === userId);
+    if (!userActive) {
+        return res.status(404).json({ message: "User has no active challenges" });
+    }
+    if (!Array.isArray(userActive.challenges)) userActive.challenges = [];
 
-  // Challenge beim User finden
-  let progress = userActive.challenges.find((c) => c.challengeId === challengeId);
-  if (!progress) {
-    return res.status(404).json({ message: "User is not registered for this challenge" });
-  }
+    // Challenge beim User finden
+    let progress = userActive.challenges.find((c) => c.challengeId === challengeId);
+    if (!progress) {
+        return res.status(404).json({ message: "User is not registered for this challenge" });
+    }
 
-  if (!Array.isArray(progress.completedTasks)) progress.completedTasks = [];
+    if (!Array.isArray(progress.completedTasks)) progress.completedTasks = [];
 
-  // completedTasks updaten
-  const hasTask = progress.completedTasks.includes(taskId);
+    // completedTasks updaten
+    const hasTask = progress.completedTasks.includes(taskId);
 
-  if (completed && !hasTask) progress.completedTasks.push(taskId);
-  if (!completed && hasTask) {
-    progress.completedTasks = progress.completedTasks.filter((id) => id !== taskId);
-  }
+    if (completed && !hasTask) progress.completedTasks.push(taskId);
+    if (!completed && hasTask) {
+        progress.completedTasks = progress.completedTasks.filter((id) => id !== taskId);
+    }
 
-  // Status automatisch setzen (optional, aber praktisch)
-  const totalTasks = Array.isArray(challenge.toDo) ? challenge.toDo.length : 0;
-  const done = progress.completedTasks.length;
+    // Status automatisch setzen (optional, aber praktisch)
+    const totalTasks = Array.isArray(challenge.toDo) ? challenge.toDo.length : 0;
+    const done = progress.completedTasks.length;
 
-  if (done === 0) progress.status = "Registered";
-  else if (totalTasks > 0 && done >= totalTasks) progress.status = "Completed";
-  else progress.status = "Ongoing";
+    if (done === 0) progress.status = "Registered";
+    else if (totalTasks > 0 && done >= totalTasks) progress.status = "Completed";
+    else progress.status = "Ongoing";
 
-  return res.json({
-    message: "Progress updated",
-    progress,
-  });
+    return res.json({
+        message: "Progress updated",
+        progress,
+    });
 });
 
 
 // GET /challenges/progress/:userId
 router.get("/progress/:userId", (req, res) => {
-  const userId = Number(req.params.userId);
-  if (!Number.isFinite(userId)) {
-    return res.status(400).json({ message: "userId muss eine Nummer sein!" });
-  }
+    const userId = Number(req.params.userId);
+    if (!Number.isFinite(userId)) {
+        return res.status(400).json({ message: "userId muss eine Nummer sein!" });
+    }
 
-  const userActive = activeChallenges.find((u) => u.userId === userId);
-  if (!userActive) {
-    return res.status(404).json({ message: "No progress found for this user" });
-  }
+    const userActive = activeChallenges.find((u) => u.userId === userId);
+    if (!userActive) {
+        return res.status(404).json({ message: "No progress found for this user" });
+    }
 
-  return res.json(userActive);
+    return res.json(userActive);
 });
 
 

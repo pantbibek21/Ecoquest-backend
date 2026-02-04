@@ -2,6 +2,14 @@ const express = require("express");
 const app = express();
 const path = require('path')  // nasr
 app.use(express.json());
+const mongoose = require('mongoose');
+
+mongoose.connect('mongodb+srv://seba_db_user:m4KqqSSm6wAa8NMP@ecoquest-cluster.0l5ee7x.mongodb.net/EcoQuest?appName=ecoquest-cluster')
+  .then(() => {
+    console.log("Connected to MongoDB");
+  }).catch((err) => {
+    console.log("Failed to connect to MongoDB", err);
+  });
 
 app.set('views', path.join(__dirname, 'views'))  // nasr
 app.set('view engine', 'ejs')  // nasr
