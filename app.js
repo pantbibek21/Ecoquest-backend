@@ -4,7 +4,7 @@ const path = require('path')  // nasr
 app.use(express.json());
 const mongoose = require('mongoose');
 
-mongoose.connect('mongodb+srv://seba_db_user:m4KqqSSm6wAa8NMP@ecoquest-cluster.0l5ee7x.mongodb.net/EcoQuest?appName=ecoquest-cluster')
+mongoose.connect()
   .then(() => {
     console.log("Connected to MongoDB");
   }).catch((err) => {
