@@ -1,7 +1,6 @@
 const cors = require("cors");
 const express = require("express");
 const app = express();
-const path = require("path"); // nasr
 require("dotenv").config();
 
 app.use(cors({ origin: "http://localhost:5173" }));
@@ -18,24 +17,17 @@ mongoose
     console.log("Failed to connect to MongoDB", err);
   });
 
-app.set("views", path.join(__dirname, "views")); // nasr
-app.set("view engine", "ejs"); // nasr
 
 const challengesRoutes = require("./routes/challenges.routes.js");
 const categoriesRoutes = require("./routes/categories.routes.js");
-const users = require("./routes/users.routes.js"); // nasr
+const usersRoute = require("./routes/users.routes.js");
 
 app.use("/challenges", challengesRoutes);
 app.use("/categories", categoriesRoutes);
-app.use("/users", users); // nasr
+app.use("/users", usersRoute);
 
 app.get("/", (req, res) => {
   res.send("Server is working");
-});
-
-app.get("/login", (req, res) => {
-  // go to login page // nasr
-  res.render("login_page");
 });
 
 app.listen(3000, () => {

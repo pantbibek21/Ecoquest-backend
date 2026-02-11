@@ -1,60 +1,201 @@
-const express = require('express')
-const router = express.Router()
-// const path = require('path')
-const { v4: uuidv4 } = require('uuid');
-const usersData = require('../data/userFakeData')
-router.use(express.urlencoded({ extended: true }))
+const express = require("express");
+const router = express.Router();
+
+const User = require("../models/users"); 
+
+// get all users
+router.get("/profile", async (req, res) => {
+  try {
+    const users = await User.find({}).sort({ Id: 1 });
+    return res.json(users); 
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Could not fetch users" });
+  }
+});
 
 
-// app.set('views', path.join(__dirname, '../views'))
-// app.set('view engine', 'ejs')
+// get one user by id 
+router.get("/profile/:id", async (req, res) => {
+  try {
+    const Id = Number(req.params.id);
 
-// get all Users
-router.get('/', (req, res) => {
-    res.json(usersData)
-})
+    if (!Number.isFinite(Id)) {
+      return res.status(400).json({ message: "Id must be a number!" });
+    }
 
-// get one User
-router.get('/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const user = usersData.find((c) => c.id === id)
-    return res.json(user)
-})
+    const user = await User.findOne({ Id });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-// edit user profile information 
-router.put('/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const { userName, password, email } = req.body
-    const userUpdated = usersData.find((c) => c.id === id)
-    const userBefore = JSON.stringify(userUpdated);
-    userUpdated.username = userName
-    userUpdated.password = password
-    userUpdated.email = email
-    res.send(`user was **** ${userBefore} *** und then updated to ${JSON.stringify(userUpdated)} `)
+    return res.json(user); 
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Could not fetch user" });
+  }
+});
 
-})
+// delete one user by id 
+router.delete("/profile/:id", async (req, res) => {
+  try {
+    const Id = Number(req.params.id);
 
+    if (!Number.isFinite(Id)) {
+      return res.status(400).json({ message: "Id must be a number!" });
+    }
 
-// create a new user 
-router.post('/signup', (req, res) => {
-    const { username, password, email} = req.body
-    usersData.push({ id: uuidv4(), username, password, email})
-    res.send(usersData)
-})
+    const result = await User.deleteOne({ Id });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
+    return res.json({ message: `User ${Id} deleted` });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Could not delete user" });
+  }
+});
 
-// delete a user account 
-router.delete('/:id', (req, res) => {
-    const id = Number(req.params.id) 
-    const newUsersData = usersData.filter(c => c.id !== id);
-    res.send(newUsersData)
-}) 
+// create user
+// Body must include: firstName, lastName, userName, email, password
+router.post("/signup/:id", async (req, res) => {
+  try {
+    const Id = Number(req.params.id);
 
-router.post('/', (req, res) => {
-    const loginData = req.body
-    const user = usersData.find(c => c.username === loginData.username && c.password === parseInt(loginData.password))
-    return res.json(user)
-})
+    if (!Number.isFinite(Id)) {
+      return res.status(400).json({ message: "Id must be a number!" });
+    }
 
+    const { firstName, lastName, userName, email, password } = req.body;
+
+    if (!firstName || !lastName || !userName || !email || password === undefined) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    if (!Number.isFinite(Number(password))) {
+      return res.status(400).json({ message: "Password must be number!" });
+    }
+
+    const existingId = await User.findOne({ Id });
+    if (existingId) {
+      return res.status(409).json({ message: "User with this Id already exists" });
+    }
+
+    const existingUser = await User.findOne({
+      $or: [{ userName }, { email }],
+    });
+
+    if (existingUser) {
+      return res
+        .status(409)
+        .json({ message: "userName or email already in use" });
+    }
+
+    const newUser = await User.create({
+      Id,
+      firstName,
+      lastName,
+      userName,
+      email,
+      password: Number(password)
+    });
+
+    return res.status(201).json({
+      message: `User ${Id} created`,
+      user: newUser
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Could not create user" });
+  }
+});
+
+// login user with Id + credentials
+// Body: email and password
+router.post("/login/:id", async (req, res) => {
+  try {
+    const Id = Number(req.params.id);
+
+    if (!Number.isFinite(Id)) {
+      return res.status(400).json({ message: "Id must be a number!" });
+    }
+
+    const { email, password } = req.body;
+
+    if (!email || !password === undefined) {
+      return res
+        .status(400)
+        .json({ message: "Provide email and password" });
+    }
+
+    if (!Number.isFinite(Number(password))) {
+      return res.status(400).json({ message: "Password must be number!" });
+    }
+
+    const query = {
+      Id,
+      password: Number(password),
+      email,
+    };
+
+    const user = await User.findOne(query);
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    return res.json({
+      message: "Login successful",
+      user
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Could not process login" });
+  }
+});
+
+// delete user only if credentials match
+// Body:  email and password
+router.delete("/profile/:id/verify", async (req, res) => {
+  try {
+    const Id = Number(req.params.id);
+
+    if (!Number.isFinite(Id)) {
+      return res.status(400).json({ message: "Id must be a number!" });
+    }
+
+    const {email, password } = req.body;
+
+    if ( !email || !password === undefined) {
+      return res
+        .status(400)
+        .json({ message: "Provide email and password" });
+    }
+
+    if (!Number.isFinite(Number(password))) {
+      return res.status(400).json({ message: "Password must be number!" });
+    }
+
+    const query = {
+      Id,
+      password: Number(password),
+      email,
+    };
+
+    const user = await User.findOne(query);
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const result = await User.deleteOne({ Id });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.json({ message: `User ${Id} deleted` });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Could not delete user" });
+  }
+});
 
 module.exports = router;
