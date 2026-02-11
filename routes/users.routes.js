@@ -18,13 +18,10 @@ router.get("/profile", async (req, res) => {
 // get one user by id 
 router.get("/profile/:id", async (req, res) => {
   try {
-    const Id = Number(req.params.id);
+    const _id = req.params.id;
 
-    if (!Number.isFinite(Id)) {
-      return res.status(400).json({ message: "Id must be a number!" });
-    }
 
-    const user = await User.findOne({ Id });
+    const user = await User.findOne({ _id });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     return res.json(user);
@@ -37,18 +34,18 @@ router.get("/profile/:id", async (req, res) => {
 // delete one user by id 
 router.delete("/profile/:id", async (req, res) => {
   try {
-    const Id = Number(req.params.id);
+    const _id = req.params.id;
 
-    if (!Number.isFinite(Id)) {
-      return res.status(400).json({ message: "Id must be a number!" });
-    }
+    // if (!Number.isFinite(Id)) {
+    //   return res.status(400).json({ message: "Id must be a number!" });
+    // }
 
-    const result = await User.deleteOne({ Id });
+    const result = await User.deleteOne({ _id });
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    return res.json({ message: `User ${Id} deleted` });
+    return res.json({ message: `User ${_id} deleted` });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Could not delete user" });
@@ -61,7 +58,7 @@ router.post("/signup", async (req, res) => {
   try {
     const { firstName, lastName, userName, email, password } = req.body;
 
-    if (!firstName || !lastName || !userName || !email || password === undefined) {
+    if (!firstName || !lastName || !userName || !email || !password === undefined) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -103,11 +100,11 @@ router.post("/signup", async (req, res) => {
 // Body: email and password
 router.post("/login/:id", async (req, res) => {
   try {
-    const Id = Number(req.params.id);
+    const _id = req.params.id;
 
-    if (!Number.isFinite(Id)) {
-      return res.status(400).json({ message: "Id must be a number!" });
-    }
+    // if (!Number.isFinite(Id)) {
+    //   return res.status(400).json({ message: "Id must be a number!" });
+    // }
 
     const { email, password } = req.body;
 
@@ -122,9 +119,9 @@ router.post("/login/:id", async (req, res) => {
     }
 
     const query = {
-      Id,
-      password: Number(password),
+      _id,
       email,
+      password: Number(password),
     };
 
     const user = await User.findOne(query);
@@ -147,11 +144,11 @@ router.post("/login/:id", async (req, res) => {
 // Body:  email and password
 router.delete("/profile/:id/verify", async (req, res) => {
   try {
-    const Id = Number(req.params.id);
+    const _id = req.params.id;
 
-    if (!Number.isFinite(Id)) {
-      return res.status(400).json({ message: "Id must be a number!" });
-    }
+    // if (!Number.isFinite(Id)) {
+    //   return res.status(400).json({ message: "Id must be a number!" });
+    // }
 
     const { email, password } = req.body;
 
@@ -166,7 +163,7 @@ router.delete("/profile/:id/verify", async (req, res) => {
     }
 
     const query = {
-      Id,
+      _id,
       password: Number(password),
       email,
     };
@@ -176,12 +173,12 @@ router.delete("/profile/:id/verify", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const result = await User.deleteOne({ Id });
+    const result = await User.deleteOne({ _id });
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    return res.json({ message: `User ${Id} deleted` });
+    return res.json({ message: `User ${_id} deleted` });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Could not delete user" });
