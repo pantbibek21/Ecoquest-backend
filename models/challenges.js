@@ -25,7 +25,8 @@ const challengeSchema = new mongoose.Schema(
         cardImage: { type: String, required: true },
 
         // Hier: Array von Subdocuments
-        toDo: { type: [toDoSchema], default: [] },
+        dailyToDo: { type: [toDoSchema], default: [] },
+        uniqueToDo: { type: [toDoSchema], default: [] },
     },
     { timestamps: true }
 );

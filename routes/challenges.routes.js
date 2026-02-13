@@ -52,7 +52,8 @@ router.post("/register", async (req, res) => {
                     challenges: {
                         challengeId,
                         status: "Registered",
-                        completedTasks: [],
+                        completedDailyToDo: [],
+                        completedUniqueToDo: []
                     },
                 },
             },
@@ -114,14 +115,16 @@ router.post("/unregister", async (req, res) => {
     }
 });
 
-// POST /challenges/progress
 router.post("/progress", async (req, res) => {
     try {
         const userId = Number(req.body.userId);
         const challengeId = Number(req.body.challengeId);
         const taskId = Number(req.body.taskId);
 
-        // WICHTIG: Boolean("false") wäre true -> daher strikt prüfen
+        // NEW: daily|unique
+        const taskType = req.body.taskType;
+
+        // Boolean sauber parsen
         const completedRaw = req.body.completed;
         const completed =
             completedRaw === true ||
@@ -129,51 +132,81 @@ router.post("/progress", async (req, res) => {
             completedRaw === 1 ||
             completedRaw === "1";
 
+        // Validation
         if (!Number.isFinite(userId) || !Number.isFinite(challengeId) || !Number.isFinite(taskId)) {
             return res.status(400).json({ message: "userId, challengeId, taskId müssen Nummern sein!" });
         }
+        if (taskType !== "daily" && taskType !== "unique") {
+            return res.status(400).json({ message: "taskType muss 'daily' oder 'unique' sein!" });
+        }
 
-        // Challenge existiert + Task existiert?
+        // CHANGED: Challenge aus DB
         const challenge = await Challenge.findOne({ id: challengeId });
         if (!challenge) return res.status(404).json({ message: "Challenge not found" });
 
-        const taskExists = Array.isArray(challenge.toDo) && challenge.toDo.some((t) => t.id === taskId);
-        if (!taskExists) return res.status(404).json({ message: "Task not found in this challenge" });
+        // Task-Liste aus DB
+        const list = taskType === "daily" ? challenge.dailyToDo : challenge.uniqueToDo;
 
-        // User progress doc finden
-        const userActive = await ActiveChallenges.findOne({ userId });
+        // Task existiert in der Liste?
+        const exists = Array.isArray(list) && list.some((t) => t.id === taskId);
+        if (!exists) return res.status(404).json({ message: "Task not found in this taskType" });
+
+        // User Active doc laden/erstellen
+        let userActive = await ActiveChallenges.findOne({ userId });
         if (!userActive) {
-            return res.status(404).json({ message: "User has no active challenges" });
+            userActive = await ActiveChallenges.create({ userId, challenges: [] });
         }
 
-        const progress = userActive.challenges.find((c) => c.challengeId === challengeId);
+        // Progress finden/erstellen
+        let progress = userActive.challenges.find((p) => p.challengeId === challengeId);
         if (!progress) {
-            return res.status(404).json({ message: "User is not registered for this challenge" });
+            userActive.challenges.push({
+                challengeId,
+                startedAt: new Date(),
+                status: "Registered",
+                uniqueCompletedTasks: [],
+                dailyCompletedTasks: [],
+                lastDailyResetDate: null,
+            });
+            progress = userActive.challenges.find((p) => p.challengeId === challengeId);
         }
 
-        // completedTasks updaten (im Doc)
-        if (!Array.isArray(progress.completedTasks)) progress.completedTasks = [];
-        const hasTask = progress.completedTasks.includes(taskId);
+        // Heute (Berlin) für Daily Reset
+        const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
 
-        if (completed && !hasTask) progress.completedTasks.push(taskId);
-        if (!completed && hasTask) {
-            progress.completedTasks = progress.completedTasks.filter((id) => id !== taskId);
+        // Daily reset, wenn neuer Tag
+        if (taskType === "daily" && progress.lastDailyResetDate !== today) {
+            progress.dailyCompletedTasks = [];
+            progress.lastDailyResetDate = today;
         }
 
-        // Status berechnen
-        const totalTasks = Array.isArray(challenge.toDo) ? challenge.toDo.length : 0;
-        const done = progress.completedTasks.length;
+        // Array wählen
+        const key = taskType === "daily" ? "dailyCompletedTasks" : "uniqueCompletedTasks";
 
-        if (done === 0) progress.status = "Registered";
-        else if (totalTasks > 0 && done >= totalTasks) progress.status = "Completed";
-        else progress.status = "Ongoing";
+        // Update Task
+        const hasTask = progress[key].includes(taskId);
+        if (completed && !hasTask) progress[key].push(taskId);
+        if (!completed && hasTask) progress[key] = progress[key].filter((id) => id !== taskId);
+
+        // Status: Completed nur nach Ablauf der days
+        const daysTotal = Number(challenge.days) || 0;
+        const startedAt = new Date(progress.startedAt);
+        const endAt = new Date(startedAt.getTime() + daysTotal * 24 * 60 * 60 * 1000);
+
+        if (daysTotal > 0 && new Date() >= endAt) {
+            progress.status = "Completed";
+        } else {
+            const anyUnique = progress.uniqueCompletedTasks.length > 0;
+            const anyDaily = progress.dailyCompletedTasks.length > 0;
+            progress.status = (!anyUnique && !anyDaily) ? "Registered" : "Ongoing";
+        }
+
+        // Bei Subdoc-Änderungen: sicherheitshalber markieren
+        userActive.markModified("challenges");
 
         await userActive.save();
 
-        return res.json({
-            message: "Progress updated",
-            progress,
-        });
+        return res.json({ message: "Progress updated", progress });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: "Could not update progress" });
@@ -181,6 +214,7 @@ router.post("/progress", async (req, res) => {
 });
 
 // GET /challenges/progress/:userId
+
 router.get("/progress/:userId", async (req, res) => {
     try {
         const userId = Number(req.params.userId);
@@ -191,6 +225,25 @@ router.get("/progress/:userId", async (req, res) => {
         const userActive = await ActiveChallenges.findOne({ userId });
         if (!userActive) {
             return res.status(404).json({ message: "No progress found for this user" });
+        }
+
+        // HEUTE als YYYY-MM-DD (Berlin)
+        const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+
+        let changed = false;
+
+        // Wenn neuer Tag: alle dailyCompletedTasks resetten
+        for (const c of userActive.challenges) {
+            if (c.lastDailyResetDate !== today) {
+                c.dailyCompletedTasks = [];
+                c.lastDailyResetDate = today;
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            userActive.markModified("challenges");
+            await userActive.save();
         }
 
         return res.json(userActive);
