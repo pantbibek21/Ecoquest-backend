@@ -12,6 +12,7 @@ const userChallengeSchema = new mongoose.Schema(
         dailyCompletedTasks: { type: [Number], default: [] },
         uniqueCompletedTasks: { type: [Number], default: [] },
         lastDailyResetDate: { type: String, default: null },
+        points: { type: Number, default: 0 },
     },
     { _id: false } // kein extra _id pro subdoc
 );
