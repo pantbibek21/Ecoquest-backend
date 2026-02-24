@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
     {
+        userId: { type: Number},
         firstName: { type: String },
         lastName: { type: String },
         userName: { type: String },

@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/users");
+const createMongoIdGenerator = require('../utils/idsGenerator');
 
+const getUserId = createMongoIdGenerator('userId', 0);
 
 // session status 
 router.get("/session", (req, res) => {
@@ -49,6 +51,7 @@ router.post("/signup", async (req, res) => {
     }
 
     const newUser = await User.create({
+      userId: await getUserId(),
       firstName,
       lastName,
       userName,
@@ -184,10 +187,10 @@ router.get("/profile", async (req, res) => {
 // get one user by id 
 router.get("/profile/:id", async (req, res) => {
   try {
-    const _id = req.params.id;
+    const userId = req.params.id;
 
 
-    const user = await User.findOne({ _id });
+    const user = await User.findOne({ userId });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     return res.json(user);
