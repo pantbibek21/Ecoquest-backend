@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Challenge = require("../models/challenges");
 const ActiveChallenges = require("../models/activeChallenges");
-const { isChallengeCompleted, resetDailyIfNewDay } = require("../utils/challenges");
+const { isChallengeCompleted, resetDailyIfNewDay, updateLog, recomputeStreak, checkStreakGet } = require("../utils/challenges");
 
 
 // GET /challenges -> alle Challenges aus MongoDB
@@ -146,6 +146,7 @@ router.get("/progress/:userId", async (req, res) => {
                 p.status = "Completed";
                 changed = true;
             }
+            if (checkStreakGet(p)) changed = true;
         }
 
         if (changed) {
@@ -206,6 +207,14 @@ router.post("/progress", async (req, res) => {
                 dailyCompletedTasks: [],
                 lastDailyResetDate: null,
                 points: 0,
+                streakLog: [
+                    {
+                        date: String,
+                        taskIds: [Number],
+                    }
+                ],
+                currentStreak: { type: Number, default: 0 },
+                highestStreak: { type: Number, default: 0 },
             });
             progress = userActive.challenges.find((p) => p.challengeId === challengeId);
         }
@@ -225,11 +234,14 @@ router.post("/progress", async (req, res) => {
 
         // Nur wenn sich wirklich was ändert:
         if (completed && !hasTask) {
-            progress.points += pointsForTask;      // z.B. daily +1, unique +10
+            progress.points += pointsForTask;
+            progress.lastTaskCompletedAt = new Date();
         }
         if (!completed && hasTask) {
             progress.points -= pointsForTask;      // wieder abziehen
         }
+        updateLog(progress, taskId, completed);
+        recomputeStreak(progress);
         // Status setzen (Completed nur nach Tagen)
         if (isChallengeCompleted(progress, challenge)) {
             progress.status = "Completed";
