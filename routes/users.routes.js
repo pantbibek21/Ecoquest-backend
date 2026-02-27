@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const bcrypt = require('bcrypt');
 const User = require("../models/users");
 const createMongoIdGenerator = require('../utils/idsGenerator');
 
@@ -35,7 +36,7 @@ router.post("/signup", async (req, res) => {
   try {
     const { firstName, lastName, userName, email, password } = req.body;
 
-    if (!firstName || !lastName || !userName || !email || !password === undefined) {
+    if (!firstName || !lastName || !userName || !email || password === undefined) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -50,18 +51,21 @@ router.post("/signup", async (req, res) => {
       });
     }
 
+    // hash Password
+    const hashedPassword = await bcrypt.hash(password, 10)
+
     const newUser = await User.create({
       userId: await getUserId(),
       firstName,
       lastName,
       userName,
       email,
-      password,
+      password: hashedPassword,
     });
 
     return res.status(201).json({
       message: "User created",
-      user: newUser
+      // user: newUser
     });
 
   } catch (err) {
@@ -81,27 +85,31 @@ router.post("/login", async (req, res) => {
     if (!email || password === undefined) {
       return res.status(400).json({ message: "Provide email and password" });
     }
+ 
 
-
-    const user = await User.findOne({
-      email,
-      password,
-    });
+    const user = await User.findOne({email});
 
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // compare hashed Password
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ message: "Wrong Password" });
+    }    
+
     // Create the session payload
     req.session.user = {
-      id: user._id.toString(),
+      id: user.userId.toString(),
       email: user.email,
-      userName: user.userName,
+      userName: user.firstName,
     };
 
     return res.json({
       message: "Login successful",
-      user: req.session.user
+      // user: req.session.user
     });
   } catch (err) {
     console.error(err);
