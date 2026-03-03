@@ -54,15 +54,12 @@ router.post("/register", async (req, res) => {
                     challenges: {
                         challengeId,
                         status: "Registered",
-                        completedDailyToDo: [],
-                        completedUniqueToDo: []
                     },
                 },
             },
             { new: true, upsert: true }
         );
 
-        // Wenn du willst: Status bei erneutem Register auf Registered setzen
         // (weil $addToSet keine Updates macht, nur "nicht doppelt hinzufügen")
         await ActiveChallenges.updateOne(
             { userId, "challenges.challengeId": challengeId },
@@ -207,14 +204,9 @@ router.post("/progress", async (req, res) => {
                 dailyCompletedTasks: [],
                 lastDailyResetDate: null,
                 points: 0,
-                streakLog: [
-                    {
-                        date: String,
-                        taskIds: [Number],
-                    }
-                ],
-                currentStreak: { type: Number, default: 0 },
-                highestStreak: { type: Number, default: 0 },
+                streakLog: [],
+                currentStreak: 0,
+                highestStreak: 0,
             });
             progress = userActive.challenges.find((p) => p.challengeId === challengeId);
         }
