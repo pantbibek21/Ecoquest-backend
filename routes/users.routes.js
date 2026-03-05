@@ -85,9 +85,9 @@ router.post("/login", async (req, res) => {
     if (!email || password === undefined) {
       return res.status(400).json({ message: "Provide email and password" });
     }
- 
 
-    const user = await User.findOne({email});
+
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
@@ -98,11 +98,11 @@ router.post("/login", async (req, res) => {
 
     if (!passwordMatch) {
       return res.status(401).json({ message: "Wrong Password" });
-    }    
+    }
 
     // Create the session payload
     req.session.user = {
-      id: user.userId.toString(),
+      userId: user.userId.toString(),
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -112,12 +112,12 @@ router.post("/login", async (req, res) => {
     // userId and userName are sent in response to login - wasn't working otherwise
     return res.json({
       message: "Login successful",
-        userId: user.userId,
-        userName: user.userName,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      // user: req.session.user,
+      userId: user.userId,
+      userName: user.userName,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      user: req.session.user,
     });
   } catch (err) {
     console.error(err);
@@ -222,7 +222,7 @@ router.put("/profile/:id", async (req, res) => {
     const { email, firstName, lastName, userName } = req.body;
 
 
-    const user = await User.findOneAndUpdate({ userId: userId }, {email, firstName, lastName, userName}, { new: true });
+    const user = await User.findOneAndUpdate({ userId: userId }, { email, firstName, lastName, userName }, { new: true });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     return res.json({
@@ -231,7 +231,8 @@ router.put("/profile/:id", async (req, res) => {
       email: updatedUser.email,
       firstName: updatedUser.firstName,
       lastName: updatedUser.lastName,
-      userName: updatedUser.userName,});
+      userName: updatedUser.userName,
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Could not update user" });
