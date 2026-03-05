@@ -241,15 +241,15 @@ router.put("/profile/:id", async (req, res) => {
 // delete one user by id 
 router.delete("/profile/:id", async (req, res) => {
   try {
-    const _id = req.params.id;
+    const userId = req.params.id;
 
 
-    const result = await User.deleteOne({ _id });
+    const result = await User.deleteOne({ userId });
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    return res.json({ message: `User ${_id} deleted` });
+    return res.json({ message: `User ${userId} deleted` });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Could not delete user" });
