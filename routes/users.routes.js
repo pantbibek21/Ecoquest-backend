@@ -104,13 +104,19 @@ router.post("/login", async (req, res) => {
     req.session.user = {
       id: user.userId.toString(),
       email: user.email,
-      userName: user.firstName,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      userName: user.userName,
     };
 
+    // userId and userName are sent in response to login - wasn't working otherwise
     return res.json({
       message: "Login successful",
         userId: user.userId,
-        userName: user.firstName,
+        userName: user.userName,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
       // user: req.session.user,
     });
   } catch (err) {
@@ -207,6 +213,28 @@ router.get("/profile/:id", async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Could not fetch user" });
+  }
+});
+
+router.put("/profile/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { email, firstName, lastName, userName } = req.body;
+
+
+    const user = await User.findOneAndUpdate({ userId: userId }, {email, firstName, lastName, userName}, { new: true });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    return res.json({
+      message: "Profile updated successfully",
+      userId: updatedUser.userId,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      userName: updatedUser.userName,});
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Could not update user" });
   }
 });
 
