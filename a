@@ -1,0 +1,25 @@
+[33m37e21b7[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m backend bug entfernt
+[33m8126611[m added validators to user Schema
+[33mab34e48[m added profile data to sent data when logging in
+[33mac49391[m userId issue fixed
+[33m3ca019c[m backend optimized
+[33m5c6ba76[m hashed passwords logic added
+[33m5f41957[m added streak logic in the backend and added the data in the progress data - streak updates through POST and GET Request in progress
+[33mf641231[m id generator for user Ids stablished
+[33mfe0e8aa[m Added point System to the Backend and added utils to handel completion and daily ToDO reset
+[33m3c74ab4[m Sessions changes: new packages (express-session, connect-mongo) & Updated the .env file. & updated the cors middleware & add session middleware on app.js & adapted the users.routes.js: new routes for the user /session, /login, /logout and /me & a middleware function (requireLogin) for routes that requires loggedin.
+[33mf4c2621[m Added the dailyToDo and uniqueToDo Logic to the backend, added that the GET /challenges/progress/:id is asking for the day and deletes the dailyToDos from yesterday, staus completed shouldnt work anymore via the completion of all the ToDos
+[33m0b93eb5[m Minor changes were made
+[33m17b6770[m simplified user model and /signup request
+[33m7f8071d[m Deleted the views folder – no need for ejs files & password must be number – for simplifing purpose & changed the routes and calls on app.js that have been made by NASR & created users.js in models folder & created a new users.routes.js in routes folder and deleted the old one
+[33me6d2a8c[m Installs cors package to resolve cross-origin request issue
+[33meba099c[m All challenges.routes GET/POST work now via the MongoDB, a new collection is added activeChallanges in which the progress and the registration is saved, everything works within the ckoud, fake data deleted
+[33mbb9557d[m .env zu gitignore und in das Backend eingefügt, connection zu Mongo angepasst
+[33m8bd9be4[m URL entfernt
+[33mc9bcbda[m Zweiter push nach MongoDB Änderungen
+[33md022086[m added a signup route on users.routes.js without auth & used uuid package to generate IDs & added a deleting route on users.routes.js
+[33m4cc62c2[m added email property to users object on userFakeData.js & added get all users Data route on users.routes.js & added get one user route on users.routes.js & added: edit user profile information route on users.routes.js
+[33meabd0a4[m Updated all the routes for challenges and added a fakeData Table for user + active challenge + progress
+[33m88303d2[m erste Test-Push
+[33mdf4c524[m Folder structure updated, API and DB(as mockData)
+[33m149a275[m initial commit
